@@ -39,8 +39,12 @@ Route::prefix('/{outlet}/{table}')->group(function () {
     // Lihat keranjang
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 
-    // Checkout
-    Route::get('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+    // Tampilkan form checkout
+    Route::get('/cart/checkout', [CartController::class, 'showCheckoutForm'])->name('cart.checkout.form');
+
+    // Proses checkout setelah form di-submit
+    Route::post('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+
 
     // Hapus dari keranjang
     Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Services\PawoonService;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CartController extends Controller
 {
@@ -27,8 +28,10 @@ class CartController extends Controller
     // Menambahkan produk ke keranjang
     public function add($outlet, $table, Request $request)
     {
-        $cart = session()->get('cart', []);
+        // Simpan outlet dan table ke session agar bisa dipakai di checkout
+        session(['outlet' => $outlet, 'table' => $table]);
     
+        $cart = session()->get('cart', []);
         $id = $request->input('id');
     
         if (isset($cart[$id])) {
@@ -62,20 +65,34 @@ class CartController extends Controller
 
 
     // Proses checkout
-    public function checkout(Request $request)
-    {
-        $outletId = $request->query('outlet_id');
-        $nomorMeja = $request->query('nomor_meja');
+   // app/Http/Controllers/CartController.php
 
+   public function showCheckoutForm($outlet, $table, Request $request)
+    {
         $cart = session()->get('cart', []);
+
         if (empty($cart)) {
-            return redirect()->route('cart.index', [
-                'outlet_id' => $outletId,
-                'nomor_meja' => $nomorMeja
-            ])->with('error', 'Keranjang kosong!');
+            return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Keranjang kosong!');
         }
 
-        // Hitung total
+        return view('cart.checkout-form', compact('outlet', 'table'));
+    }
+
+    public function checkout($outlet, $table, Request $request)
+    {
+        $request->validate([
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_email' => ['required', 'email', 'max:255'],
+            'customer_phone' => ['required', 'string', 'max:20'],
+        ]);
+
+        $cart = session()->get('cart', []);
+
+        if (empty($cart)) {
+            return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Keranjang kosong!');
+        }
+
+        // Hitung total dan item
         $total = 0;
         $items = [];
 
@@ -91,40 +108,46 @@ class CartController extends Controller
             ];
         }
 
-        // Hitung service dan tax
-        $taxAmount = $total * 0.10; // 10%
-        $serviceAmount = $total * 0.02; // 2%
-        $total = $total + $taxAmount + $serviceAmount;
+        // Hitung pajak dan service
+        $taxAmount = $total * 0.10;
+        $serviceAmount = $total * 0.02;
+        $total += $taxAmount;
+        $receiptOrder = 'Order-' . substr(md5(Str::uuid()), 0, 6);
+        // Simpan ke session untuk PDF
+        session([
+            'receipt' => [
+                'receipt_code' => $receiptOrder,
+                'order_time' => \Carbon\Carbon::now(),
+                'outlet_name' => 'Baraja Amphitheater',
+                'table_number' => $table,
+                'customer_name' => $request->input('customer_name', 'Pelanggan'),
+                'items' => $items,
+                'tax' => $taxAmount,
+                'total' => $total
+            ]
+        ]);
 
+        // Data pesanan untuk Pawoon
         $orderData = [
-            'receipt_code' => 'Order-' . Str::uuid(),
-            'outlet_id' => $outletId,
-            'order_time' => Carbon::now()->toIso8601String(),
-            'customer_name' => $request->input('customer_name', 'Pelanggan'),
-            'customer_email' => $request->input('customer_email', 'pelanggan@email.com'),
-            'customer_phone' => $request->input('customer_phone', '0800000000'),
-            'discount_title' => '',
-            'discount_percentage' => 0,
-            'discount_amount' => 0,
-            'notes' => 'Nomor Meja ' . $nomorMeja,
-            'company_sales_type_id' => 'ca6f3a81-fabb-4bff-a383-98aab1995394',
+            
+            'receipt_code' => $receiptOrder,
+            'outlet_id' => "1101ee80-fe3b-11ef-8975-1b84bb569308",
+            'order_time' => \Carbon\Carbon::now()->toIso8601String(),
+            'customer_name' => $request->input('customer_name'),
+            'customer_email' => $request->input('customer_email'),
+            'customer_phone' => $request->input('customer_phone'),
+            'notes' => 'Nomor Meja ' . $table,
+            'company_sales_type_id' => '955bf3c0-ffd5-11ef-88ec-b98f6c9ef958',
             'items' => $items,
-            'taxes' => [
-                [
-                    'tax_id' => '2d4a3040-2272-11ea-a9fb-efb08550262c',
-                    'amount' => round($taxAmount)
-                ]
-            ],
-            'services' => [
-                [
-                    'service_id' => 'f860ed90-e82c-11ef-bc00-63327bc3c4f0',
-                    'amount' => round($serviceAmount)
-                ]
-            ],
+            'taxes' => [[
+                'tax_id' => '38dfd790-fe3c-11ef-9376-415874e7b927',
+                'amount' => round($taxAmount)
+            ]],
+
             'payment' => [
                 'amount' => $total,
-                'method' => 'others',
-                'company_payment_method_id' => '1c6a4790-28a2-11ea-a658-954c3cfb97a9'
+                'method' => 'cash',
+                'company_payment_method_id' => ''
             ],
             'feature_flags' => [
                 'order_accepted_type' => 'manual'
@@ -132,17 +155,18 @@ class CartController extends Controller
         ];
 
         try {
-            $response = $this->pawoon->createOrder($orderData);
-            session()->forget('cart'); // Bersihkan keranjang
-            return redirect()->route('cart.index', [
-                'outlet_id' => $outletId,
-                'nomor_meja' => $nomorMeja
-            ])->with('success', 'Pesanan berhasil dikirim!');
+            $this->pawoon->createOrder($orderData);
+            session()->forget(['cart', 'receipt']);
+            // Generate PDF
+            $pdf = Pdf::loadView('cart.receipt', session('receipt'));
+            $pdf->setPaper('A4', 'portrait');
+            $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
+            $pdf->save(storage_path('app/public/receipts/' . session('receipt')['receipt_code'] . '.pdf'));
+            
+            return redirect()->route('cart.index', [$outlet, $table])->with('success', 'Pesanan berhasil dikirim!');
         } catch (\Exception $e) {
-            return redirect()->route('cart.index', [
-                'outlet_id' => $outletId,
-                'nomor_meja' => $nomorMeja
-            ])->with('error', 'Gagal mengirim pesanan: ' . $e->getMessage());
+            return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Gagal mengirim pesanan: ' . $e->getMessage());
         }
     }
+
 }

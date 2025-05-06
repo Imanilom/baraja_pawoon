@@ -46,7 +46,8 @@ class PawoonService
     {
         return [
             'Authorization' => 'Bearer ' . $this->accessToken,
-            'Accept' => 'application/json'
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
         ];
     }
 
@@ -62,7 +63,7 @@ class PawoonService
     public function getProducts($page = 1, $perPage = 25, $categoryId = null)
     {
         $query = [
-            'outlet_id' => '130a3a60-ee98-11ef-8e7e-3ffdc9e6f717',
+            'outlet_id' => '1101ee80-fe3b-11ef-8975-1b84bb569308',
             'page' => $page,
             'per_page' => $perPage,
         ];
@@ -120,21 +121,39 @@ class PawoonService
     }
     
 
-
+    
     public function createOrder(array $orderDetails)
     {
-        $response = $this->client->post('/orders', [
-            'headers' => array_merge([
-                'Content-Type' => 'application/json'
-            ], $this->authHeaders()),
-            'json' => [
-                'data' => $orderDetails
-            ]
+        $jsonBody = json_encode([
+            'data' => $orderDetails
         ]);
     
-        return json_decode($response->getBody(), true);
+        $headers = $this->authHeaders(); 
+    
+        $request = new Request('POST', 'https://open-api.pawoon.com/orders', $headers, $jsonBody);
+        error_log(json_encode($headers, JSON_PRETTY_PRINT));
+        error_log(json_encode($jsonBody, JSON_PRETTY_PRINT));
+        try {
+            $response = $this->client->send($request); // gunakan client yg sudah auth
+    
+            $responseData = json_decode($response->getBody(), true);
+            error_log("Response body:");
+            error_log(json_encode($responseData, JSON_PRETTY_PRINT));
+    
+            return $responseData;
+    
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            error_log("Request failed: " . $e->getMessage());
+            if ($e->hasResponse()) {
+                error_log("Error response: " . $e->getResponse()->getBody());
+            }
+            return null;
+        }
     }
     
+    
+    
+
 
     public function updateOrderStatus($orderId, $status)
     {

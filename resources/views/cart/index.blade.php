@@ -129,10 +129,12 @@
             <div class="cart-mobile">
                 @php $grand_total = 0; @endphp
                 @foreach ($cart as $id => $item)
-                    @php 
-                        $total = $item['price'] * $item['quantity'];
-                        $grand_total += $total; 
-                    @endphp
+                @php 
+                    $total = $item['price'] * $item['quantity'];
+                    $grand_total += $total; 
+                    $tax = $grand_total * 0.10;
+                    $total_with_tax = $grand_total + $tax;
+                @endphp
                     <div class="card card-custom mb-3">
                         <div class="row g-0">
                             <div class="col-4 d-flex align-items-center justify-content-center">
@@ -158,8 +160,11 @@
                         </div>
                     </div>
                 @endforeach
+                
                 <div class="total-box">
-                    <strong>Total Semua: Rp {{ number_format($grand_total, 0, ',', '.') }}</strong>
+                <p>Subtotal: Rp {{ number_format($grand_total, 0, ',', '.') }}</p>
+                <p>Pajak (10%): Rp {{ number_format($tax, 0, ',', '.') }}</p>
+                <strong>Total Bayar: Rp {{ number_format($total_with_tax, 0, ',', '.') }}</strong>
                 </div>
             </div>
 
@@ -180,11 +185,15 @@
                                 </thead>
                                 <tbody>
                                     @php $grand_total = 0; @endphp
+                                
                                     @foreach ($cart as $id => $item)
                                         @php 
                                             $total = $item['price'] * $item['quantity'];
                                             $grand_total += $total; 
+                                            $tax = $grand_total * 0.10;
+                                            $total_with_tax = $grand_total + $tax;
                                         @endphp
+                                       
                                         <tr class="align-middle">
                                             <td>
                                                 <div class="d-flex align-items-center">
@@ -209,11 +218,11 @@
                                             </td>
                                         </tr>
                                     @endforeach
+                                 
                                     <tr class="table-success">
-                                        <td colspan="3" class="text-end fw-bold">Total:</td>
-                                        <td colspan="2" class="title-highlight fw-bold">
-                                            Rp {{ number_format($grand_total, 0, ',', '.') }}
-                                        </td>
+                                    <p>Subtotal: Rp {{ number_format($grand_total, 0, ',', '.') }}</p>
+    <p>Pajak (10%): Rp {{ number_format($tax, 0, ',', '.') }}</p>
+    <strong>Total Bayar: Rp {{ number_format($total_with_tax, 0, ',', '.') }}</strong>
                                     </tr>
                                 </tbody>
                             </table>
