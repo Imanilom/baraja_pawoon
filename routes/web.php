@@ -21,13 +21,9 @@ Route::get('/', function () {
 });
 
 Route::get('/test-pawoon-products', function (\App\Services\PawoonService $pawoonService) {
-    return response()->json($pawoonService->getTaxes());
+    return response()->json($pawoonService->getCompanySalestype());
 });
 
-Route::get('/scan/{outlet}/{table}', function ($outlet, $table) {
-    // Mengarahkan dengan parameter query URL
-    return redirect()->route('products.index', ['outlet_id' => $outlet, 'nomor_meja' => $table]);
-})->name('scan.qr');
 
 Route::prefix('/{outlet}/{table}')->group(function () {
     // Daftar produk
@@ -44,7 +40,6 @@ Route::prefix('/{outlet}/{table}')->group(function () {
 
     // Proses checkout setelah form di-submit
     Route::post('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
-
 
     // Hapus dari keranjang
     Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');

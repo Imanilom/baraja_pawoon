@@ -147,6 +147,7 @@
                                     <h5 class="card-title mb-1">{{ $item['name'] }}</h5>
                                     <p class="mb-1">Harga: <strong>Rp {{ number_format($item['price'], 0, ',', '.') }}</strong></p>
                                     <p class="mb-1">Jumlah: {{ $item['quantity'] }}</p>
+                                    <p class="mb-1">Notes: {{ $item['notes'] }}</p>
                                     <p class="mb-2">Total: <strong>Rp {{ number_format($total, 0, ',', '.') }}</strong></p>
                                     <form method="POST" action="{{ route('cart.remove', [$outlet ?? 0, $table ?? 0]) }}">
                                         @csrf

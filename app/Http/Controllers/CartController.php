@@ -34,14 +34,23 @@ class CartController extends Controller
         $cart = session()->get('cart', []);
         $id = $request->input('id');
     
+        // Retrieve quantity and notes from the request
+        $quantity = $request->input('quantity', 1); // Default to 1 if not provided
+        $notes = $request->input('notes', ''); // Default to empty string if not provided
+    
         if (isset($cart[$id])) {
-            $cart[$id]['quantity']++;
+            // If the product is already in the cart, update the quantity
+            $cart[$id]['quantity'] += $quantity;
+            // Append notes to existing notes, you might want to handle this differently
+            $cart[$id]['notes'] .= "\n" . $notes;
         } else {
+            // If the product is not in the cart, add it with the provided quantity and notes
             $cart[$id] = [
                 'name' => $request->input('name'),
                 'price' => $request->input('price'),
                 'image_url' => $request->input('image_url'),
-                'quantity' => 1
+                'quantity' => $quantity,
+                'notes' => $notes
             ];
         }
     
@@ -103,7 +112,7 @@ class CartController extends Controller
             $items[] = [
                 'product_id' => $productId,
                 'qty' => $item['quantity'],
-                'notes' => 'Tanpa keterangan',
+                'notes' => $item['notes'], // Use notes from cart
                 'price' => $item['price']
             ];
         }
@@ -131,16 +140,16 @@ class CartController extends Controller
         $orderData = [
             
             'receipt_code' => $receiptOrder,
-            'outlet_id' => "1101ee80-fe3b-11ef-8975-1b84bb569308",
+            'outlet_id' =>env('Outlet_id'),
             'order_time' => \Carbon\Carbon::now()->toIso8601String(),
             'customer_name' => $request->input('customer_name'),
             'customer_email' => $request->input('customer_email'),
             'customer_phone' => $request->input('customer_phone'),
             'notes' => 'Nomor Meja ' . $table,
-            'company_sales_type_id' => '955bf3c0-ffd5-11ef-88ec-b98f6c9ef958',
+            'company_sales_type_id' => env('company_sales_type_id'),
             'items' => $items,
             'taxes' => [[
-                'tax_id' => '38dfd790-fe3c-11ef-9376-415874e7b927',
+                'tax_id' => env('Tax_id'),
                 'amount' => round($taxAmount)
             ]],
 

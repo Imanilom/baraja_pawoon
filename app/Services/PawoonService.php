@@ -87,6 +87,30 @@ class PawoonService
         ]);
         return json_decode($response->getBody(), true);
     }
+
+    public function getVariants()
+    {
+        $response = $this->client->get('/products/variants', [
+            'headers' => $this->authHeaders()
+        ]);
+        return json_decode($response->getBody(), true);
+    }
+
+    public function getModifierGroups()
+    {
+        $response = $this->client->get('/products/modifier-groups', [
+            'headers' => $this->authHeaders()
+        ]);
+        return json_decode($response->getBody(), true);
+    }
+
+    public function getModifierGroupsModifiers()
+    {
+        $response = $this->client->get('/modifier-groups/modifiers', [
+            'headers' => $this->authHeaders()
+        ]);
+        return json_decode($response->getBody(), true);
+    }
     
     public function getProductsByCategory($categoryId = null)
     {
@@ -114,7 +138,16 @@ class PawoonService
 
     public function getTaxes()
     {
-        $response = $this->client->get('/company-payment-methods', [
+        $response = $this->client->get('/taxes', [
+            'headers' => $this->authHeaders()
+        ]);
+        return json_decode($response->getBody(), true);
+    }
+
+    
+    public function getCompanySalestype()
+    {
+        $response = $this->client->get('/company-sales-types', [
             'headers' => $this->authHeaders()
         ]);
         return json_decode($response->getBody(), true);
