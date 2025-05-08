@@ -63,7 +63,7 @@ class PawoonService
     public function getProducts($page = 1, $perPage = 25, $categoryId = null)
     {
         $query = [
-            'outlet_id' => '1101ee80-fe3b-11ef-8975-1b84bb569308',
+            'outlet_id' => env('Outlet_id'),
             'page' => $page,
             'per_page' => $perPage,
         ];
@@ -164,8 +164,7 @@ class PawoonService
         $headers = $this->authHeaders(); 
     
         $request = new Request('POST', 'https://open-api.pawoon.com/orders', $headers, $jsonBody);
-        error_log(json_encode($headers, JSON_PRETTY_PRINT));
-        error_log(json_encode($jsonBody, JSON_PRETTY_PRINT));
+ 
         try {
             $response = $this->client->send($request); // gunakan client yg sudah auth
     
