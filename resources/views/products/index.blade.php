@@ -144,6 +144,10 @@
                                 'a9bdba20-96ff-11ed-9042-e36d004ccaea',
                                 '0c151b80-56ba-11ee-9653-d1f7f41051cc',
                                 '5b65e960-724e-11ed-81dc-51a98b3c20cb',
+                                '72bb8710-0fa6-11f0-a92c-c1f35c728925',
+                                '7bbca8f0-0fa6-11f0-a490-b5090a647f6b',
+                                
+
                             ]))
                             <option value="{{ $category['id'] }}" {{ request('category_id') == $category['id'] ? 'selected' : '' }}>
                                 {{ $category['name'] }}
