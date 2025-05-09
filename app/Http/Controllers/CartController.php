@@ -116,6 +116,7 @@ class CartController extends Controller
 
         $items[] = [
             'product_id' => $productId,
+            'name' => $item['name'],
             'qty' => $item['quantity'],
             'notes' => $item['notes'], // Use notes from cart
             'price' => $item['price']

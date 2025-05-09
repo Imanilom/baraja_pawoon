@@ -11,7 +11,7 @@
     <hr>
     <ul>
         @foreach($items as $item)
-            <li>{{ $item['qty'] }}x Produk ID {{ $item['product_id'] }} - Rp{{ number_format($item['price'], 0) }}</li>
+            <li>{{ $item['qty'] }}x  {{ $item['name'] }} - Rp{{ number_format($item['price'], 0) }}</li>
         @endforeach
     </ul>
     <p>Pajak: Rp{{ number_format($tax, 0) }}</p>

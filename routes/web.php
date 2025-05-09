@@ -21,7 +21,7 @@ Route::get('/', function () {
 });
 
 Route::get('/test-pawoon-products', function (\App\Services\PawoonService $pawoonService) {
-    return response()->json($pawoonService->getCompanySalestype());
+    return response()->json($pawoonService->getProducts());
 });
 
 
@@ -43,7 +43,7 @@ Route::prefix('/{outlet}/{table}')->group(function () {
 
     // Hapus dari keranjang
     Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
-    
+
     Route::get('/receipt/{code}', [CartController::class, 'showReceipt'])->name('receipt.show');
 
 });
