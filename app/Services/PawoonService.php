@@ -67,25 +67,35 @@ class PawoonService
             'page' => $page,
             'per_page' => $perPage,
         ];
-    
+
         if ($categoryId) {
             $query['product_category_id'] = $categoryId;
         }
-    
-        $response = $this->client->get('/products?' . http_build_query($query), [
-            'headers' => $this->authHeaders()
-        ]);
-    
-        return json_decode($response->getBody(), true);
+
+        try {
+            $response = $this->client->get('/products?' . http_build_query($query), [
+                'headers' => $this->authHeaders()
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            Log::error('Error fetching products from Pawoon API: ' . $e->getMessage());
+            return ['data' => [], 'meta' => []]; // Return empty data on error
+        }
     }
-    
 
     public function getCategories()
     {
-        $response = $this->client->get('/products/categories', [
-            'headers' => $this->authHeaders()
-        ]);
-        return json_decode($response->getBody(), true);
+        try {
+            $response = $this->client->get('/products/categories', [
+                'headers' => $this->authHeaders()
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            Log::error('Error fetching categories from Pawoon API: ' . $e->getMessage());
+            return ['data' => []]; // Return empty data on error
+        }
     }
 
     public function getVariants()
