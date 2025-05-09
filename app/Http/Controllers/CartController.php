@@ -7,6 +7,8 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Services\PawoonService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Support\Facades\Storage;
 
 class CartController extends Controller
 {
@@ -88,94 +90,121 @@ class CartController extends Controller
     }
 
     public function checkout($outlet, $table, Request $request)
-    {
-        $request->validate([
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:20'],
-        ]);
+{
+    \Log::info('Checkout process started.'); // Added log
 
-        $cart = session()->get('cart', []);
+    $request->validate([
+        'customer_name' => ['required', 'string', 'max:255'],
+        'customer_email' => ['required', 'email', 'max:255'],
+        'customer_phone' => ['required', 'string', 'max:20'],
+    ]);
 
-        if (empty($cart)) {
-            return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Keranjang kosong!');
-        }
+    $cart = session()->get('cart', []);
 
-        // Hitung total dan item
-        $total = 0;
-        $items = [];
-
-        foreach ($cart as $productId => $item) {
-            $subtotal = $item['price'] * $item['quantity'];
-            $total += $subtotal;
-
-            $items[] = [
-                'product_id' => $productId,
-                'qty' => $item['quantity'],
-                'notes' => $item['notes'], // Use notes from cart
-                'price' => $item['price']
-            ];
-        }
-
-        // Hitung pajak dan service
-        $taxAmount = $total * 0.10;
-        $serviceAmount = $total * 0.02;
-        $total += $taxAmount;
-        $receiptOrder = 'Order-' . substr(md5(Str::uuid()), 0, 6);
-        // Simpan ke session untuk PDF
-        session([
-            'receipt' => [
-                'receipt_code' => $receiptOrder,
-                'order_time' => \Carbon\Carbon::now(),
-                'outlet_name' => 'Baraja Amphitheater',
-                'table_number' => $table,
-                'customer_name' => $request->input('customer_name', 'Pelanggan'),
-                'items' => $items,
-                'tax' => $taxAmount,
-                'total' => $total
-            ]
-        ]);
-
-        // Data pesanan untuk Pawoon
-        $orderData = [
-            
-            'receipt_code' => $receiptOrder,
-            'outlet_id' =>env('Outlet_id'),
-            'order_time' => \Carbon\Carbon::now()->toIso8601String(),
-            'customer_name' => $request->input('customer_name'),
-            'customer_email' => $request->input('customer_email'),
-            'customer_phone' => $request->input('customer_phone'),
-            'notes' => 'Nomor Meja ' . $table,
-            'company_sales_type_id' => env('company_sales_type_id'),
-            'items' => $items,
-            'taxes' => [[
-                'tax_id' => env('Tax_id'),
-                'amount' => round($taxAmount)
-            ]],
-
-            'payment' => [
-                'amount' => $total,
-                'method' => 'cash',
-                'company_payment_method_id' => ''
-            ],
-            'feature_flags' => [
-                'order_accepted_type' => 'manual'
-            ]
-        ];
-
-        try {
-            $this->pawoon->createOrder($orderData);
-            session()->forget(['cart', 'receipt']);
-            // Generate PDF
-            $pdf = Pdf::loadView('cart.receipt', session('receipt'));
-            $pdf->setPaper('A4', 'portrait');
-            $pdf->setOptions(['isHtml5ParserEnabled' => true, 'isRemoteEnabled' => true]);
-            $pdf->save(storage_path('app/public/receipts/' . session('receipt')['receipt_code'] . '.pdf'));
-            
-            return redirect()->route('cart.index', [$outlet, $table])->with('success', 'Pesanan berhasil dikirim!');
-        } catch (\Exception $e) {
-            return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Gagal mengirim pesanan: ' . $e->getMessage());
-        }
+    if (empty($cart)) {
+        \Log::info('Cart is empty. Redirecting back.'); // Added log
+        return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Keranjang kosong!');
     }
+
+    // Hitung total dan item
+    $total = 0;
+    $items = [];
+
+    foreach ($cart as $productId => $item) {
+        $subtotal = $item['price'] * $item['quantity'];
+        $total += $subtotal;
+
+        $items[] = [
+            'product_id' => $productId,
+            'qty' => $item['quantity'],
+            'notes' => $item['notes'], // Use notes from cart
+            'price' => $item['price']
+        ];
+    }
+
+    // Hitung pajak dan service
+    $taxAmount = $total * 0.10;
+    $serviceAmount = $total * 0.02;
+    $total += $taxAmount;
+    $receiptOrder = 'Order-' . substr(md5(Str::uuid()), 0, 6);
+
+    $receiptData = [
+        'receipt_code' => $receiptOrder,
+        'order_time' => Carbon::now(),
+        'outlet_name' => 'Baraja Amphitheater',
+        'table_number' => $table,
+        'customer_name' => $request->input('customer_name', 'Pelanggan'),
+        'items' => $items,
+        'tax' => $taxAmount,
+        'total' => $total,
+        'qr_code' => QrCode::size(200)->generate($receiptOrder),
+        'message' => 'Silahkan bayar ke kasir dan tunjukan QR code-nya'
+    ];
+
+    session(['receipt' => $receiptData]);
+
+    // Data pesanan untuk Pawoon
+    $orderData = [
+        'receipt_code' => $receiptOrder,
+        'outlet_id' =>env('Outlet_id'),
+        'order_time' => \Carbon\Carbon::now()->toIso8601String(),
+        'customer_name' => $request->input('customer_name'),
+        'customer_email' => $request->input('customer_email'),
+        'customer_phone' => $request->input('customer_phone'),
+        'notes' => 'Nomor Meja ' . $table,
+        'company_sales_type_id' => env('company_sales_type_id'),
+        'items' => $items,
+        'taxes' => [[
+            'tax_id' => env('Tax_id'),
+            'amount' => round($taxAmount)
+        ]],
+        'payment' => [
+            'amount' => $total,
+            'method' => 'cash',
+            'company_payment_method_id' => ''
+        ],
+        'feature_flags' => [
+            'order_accepted_type' => 'manual'
+        ]
+    ];
+    
+    // Kirim halaman view yang menampilkan QR Code dan pesan
+    return view('pdf.receipt', $receiptData);
+
+    try {
+        // $this->pawoon->createOrder($orderData);
+        // Simpan PDF seperti sebelumnya
+        $receiptData = session('receipt');
+        $receiptCode = $receiptData['receipt_code'];
+    
+        // Hapus cart dan receipt dari session
+        session()->forget(['cart', 'receipt']);
+    
+ 
+    
+    } catch (\Exception $e) {
+        \Log::error('Error during checkout: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        return redirect()->route('cart.index', [$outlet, $table])->with('error', 'Gagal mengirim pesanan: ' . $e->getMessage());
+    }
+    
+}
+
+public function showReceipt($code)
+{
+    $receiptData = [
+        'receipt_code' => $code,
+        'customer_name' => 'Pelanggan',
+        'table_number' => 'XX',
+        'order_time' => now(),
+        'items' => [],
+        'tax' => 0,
+        'total' => 0,
+        'qr_code' => QrCode::size(200)->generate($code),
+        'message' => 'Silahkan bayar ke kasir dan tunjukan QR code-nya'
+    ];
+
+    return view('pdf.receipt', $receiptData);
+}
+
 
 }

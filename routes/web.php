@@ -43,4 +43,7 @@ Route::prefix('/{outlet}/{table}')->group(function () {
 
     // Hapus dari keranjang
     Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+    
+    Route::get('/receipt/{code}', [CartController::class, 'showReceipt'])->name('receipt.show');
+
 });
