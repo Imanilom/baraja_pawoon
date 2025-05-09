@@ -1,9 +1,13 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
 
-@section('content')
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Shop Menu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #fdfcfb;
@@ -41,11 +45,13 @@
             z-index: 1000;
             padding: 20px;
             transition: transform 0.3s ease-in-out;
-            transform: translateY(100%); /* Hidden by default */
+            transform: translateY(100%);
+            /* Hidden by default */
         }
 
         .bottom-sheet.show {
-            transform: translateY(0); /* Show the modal */
+            transform: translateY(0);
+            /* Show the modal */
         }
 
         .bottom-sheet-header {
@@ -105,29 +111,30 @@
             }
         }
     </style>
+</head>
 
+<body>
     <div class="container py-5">
-
         {{-- Judul --}}
         <h2 class="text-center mb-3 title-highlight">☕ Menu Spesial Kami Hari Ini</h2>
 
         {{-- Informasi outlet dan meja jika tersedia --}}
         @if (isset($outlet) && isset($table))
-            <div class="alert alert-success text-center">
-                <strong>Outlet:</strong> Baraja Amphitheater | <strong>Meja:</strong> {{ $table }}
-            </div>
+        <div class="alert alert-success text-center">
+            <strong>Outlet:</strong> Baraja Amphitheater | <strong>Meja:</strong> {{ $table }}
+        </div>
         @endif
 
         {{-- Notifikasi sukses atau error --}}
         @if(session('success'))
-            <div class="alert alert-success text-center">
-                {{ session('success') }}
-            </div>
+        <div class="alert alert-success text-center">
+            {{ session('success') }}
+        </div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger text-center">
-                {{ session('error') }}
-            </div>
+        <div class="alert alert-danger text-center">
+            {{ session('error') }}
+        </div>
         @endif
 
         {{-- Filter Kategori --}}
@@ -137,21 +144,22 @@
                     <select name="category_id" class="form-select" onchange="this.form.submit()">
                         <option value="">-- Semua Kategori --</option>
                         @foreach ($categories as $category)
-                            @continue(in_array($category['id'], [
-                                'b997b2f0-2866-11ea-ab2f-b913a3fa2965',
-                                '9c788a20-387a-11eb-9172-ad7cf7a080e6',
-                                '5b65e960-724e-11ed-81dc-51a98550262c',
-                                'a9bdba20-96ff-11ed-9042-e36d004ccaea',
-                                '0c151b80-56ba-11ee-9653-d1f7f41051cc',
-                                '5b65e960-724e-11ed-81dc-51a98b3c20cb',
-                                '72bb8710-0fa6-11f0-a92c-c1f35c728925',
-                                '7bbca8f0-0fa6-11f0-a490-b5090a647f6b',
-                                
+                        @continue(in_array($category['id'], [
+                        'b997b2f0-2866-11ea-ab2f-b913a3fa2965',
+                        '9c788a20-387a-11eb-9172-ad7cf7a080e6',
+                        '5b65e960-724e-11ed-81dc-51a98550262c',
+                        'a9bdba20-96ff-11ed-9042-e36d004ccaea',
+                        '0c151b80-56ba-11ee-9653-d1f7f41051cc',
+                        '5b65e960-724e-11ed-81dc-51a98b3c20cb',
+                        '72bb8710-0fa6-11f0-a92c-c1f35c728925',
+                        '7bbca8f0-0fa6-11f0-a490-b5090a647f6b',
 
-                            ]))
-                            <option value="{{ $category['id'] }}" {{ request('category_id') == $category['id'] ? 'selected' : '' }}>
-                                {{ $category['name'] }}
-                            </option>
+
+                        ]))
+                        <option value="{{ $category['id'] }}" {{ request('category_id')==$category['id'] ? 'selected' : ''
+                            }}>
+                            {{ $category['name'] }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
@@ -160,84 +168,101 @@
 
         {{-- Badge kategori aktif --}}
         @if (request('category_id'))
-            @php
-                $activeCategory = collect($categories)->firstWhere('id', request('category_id'));
-            @endphp
-            @if ($activeCategory)
-                <div class="text-center mb-4">
-                    <span class="badge bg-success px-3 py-2">
-                        Kategori: {{ $activeCategory['name'] }}
-                    </span>
-                </div>
-            @endif
+        @php
+        $activeCategory = collect($categories)->firstWhere('id', request('category_id'));
+        @endphp
+        @if ($activeCategory)
+        <div class="text-center mb-4">
+            <span class="badge bg-success px-3 py-2">
+                Kategori: {{ $activeCategory['name'] }}
+            </span>
+        </div>
+        @endif
         @endif
 
         {{-- Info jumlah produk --}}
         @if (!empty($meta))
-            <p class="text-center text-muted">
-                Menampilkan {{ count($products) }} dari total {{ $meta['total'] }} produk.
-            </p>
+        <p class="text-center text-muted">
+            Menampilkan {{ count($products) }} dari total {{ $meta['total'] }} produk.
+        </p>
         @endif
 
         {{-- Daftar Produk --}}
         <div class="row">
             @forelse ($products as $product)
-                <div class="col-md-4 mb-4">
-                    <div class="card h-100 shadow-sm border-0 rounded-4">
-                        @if (!empty($product['image']))
-                            <img src="{{ $product['image'] }}" class="card-img-top rounded-top-4 img-fluid" alt="{{ $product['name'] }}">
-                        @else
-                            <img src="https://placehold.co/600x400@2x.png" class="card-img-top rounded-top-4 img-fluid" alt="No Image">
-                        @endif
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm border-0 rounded-4">
+                    @if (!empty($product['image']))
+                    <img src="{{ $product['image'] }}" class="card-img-top rounded-top-4 img-fluid"
+                        alt="{{ $product['name'] }}">
+                    @else
+                    <img src="https://placehold.co/600x400@2x.png" class="card-img-top rounded-top-4 img-fluid"
+                        alt="No Image">
+                    @endif
 
-                        <div class="card-body">
-                            <h5 class="card-title title-highlight">{{ $product['name'] }}</h5>
-                            <p class="card-text text-muted">{{ $product['description'] ?? 'Tidak ada deskripsi.' }}</p>
-                        </div>
-
-                        <div class="card-footer bg-light border-0">
-                            <strong class="title-highlight">Harga: Rp {{ number_format($product['price'], 0, ',', '.') }}</strong>
-                        </div>
-
-                        <button class="btn btn-sm w-100 btn-coffee mt-2 add-to-cart-btn"
-                                data-product-id="{{ $product['id'] }}"
-                                data-product-name="{{ $product['name'] }}"
-                                data-product-price="{{ $product['price'] }}"
-                                data-product-image="{{ $product['image'] ?? 'https://placehold.co/600x400@2x.png' }}">
-                            ☕ Tambah ke Keranjang
-                        </button>
+                    <div class="card-body">
+                        <h5 class="card-title title-highlight">{{ $product['name'] }}</h5>
+                        <p class="card-text text-muted">{{ $product['description'] ?? 'Tidak ada deskripsi.' }}</p>
                     </div>
+
+                    <div class="card-footer bg-light border-0">
+                        <strong class="title-highlight">Harga: Rp {{ number_format($product['price'], 0, ',', '.')
+                            }}</strong>
+                    </div>
+
+                    <button class="btn btn-sm w-100 btn-coffee mt-2 add-to-cart-btn"
+                        data-product-id="{{ $product['id'] }}" data-product-name="{{ $product['name'] }}"
+                        data-product-price="{{ $product['price'] }}"
+                        data-product-image="{{ $product['image'] ?? 'https://placehold.co/600x400@2x.png' }}">
+                        ☕ Tambah ke Keranjang
+                    </button>
                 </div>
+            </div>
             @empty
-                <p class="text-center">Tidak ada produk ditemukan.</p>
+            <p class="text-center">Tidak ada produk ditemukan.</p>
             @endforelse
         </div>
 
         {{-- Pagination --}}
-        @if (!empty($meta))
-            @php
-                $currentPage = $meta['page'];
-                $totalPages = ceil($meta['total'] / $meta['per_page']);
-                $categoryId = request()->get('category_id');
-            @endphp
+        @if ($products->hasPages())
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {{-- Previous Page Link --}}
+                @if ($products->onFirstPage())
+                <li class="page-item disabled">
+                    <span class="page-link">Previous</span>
+                </li>
+                @else
+                <li class="page-item">
+                    <a class="page-link" href="{{ $products->previousPageUrl() }}" rel="prev">Previous</a>
+                </li>
+                @endif
 
-            <nav>
-                <ul class="pagination justify-content-center mt-4">
-                    <li class="page-item {{ $currentPage <= 1 ? 'disabled' : '' }}">
-                        <a class="page-link" href="?page={{ $currentPage - 1 }}{{ $categoryId ? '&category_id=' . $categoryId : '' }}">← Sebelumnya</a>
-                    </li>
+                {{-- Pagination Elements --}}
+                @foreach ($products->getUrlRange(max($products->currentPage() - 2, 1), min($products->currentPage() + 2, $products->lastPage())) as $page => $url)
+                @if ($page == $products->currentPage())
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link">{{ $page }}</span>
+                </li>
+                @else
+                <li class="page-item">
+                    <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                </li>
+                @endif
+                @endforeach
 
-                    @for ($i = 1; $i <= $totalPages; $i++)
-                        <li class="page-item {{ $i == $currentPage ? 'active' : '' }}">
-                            <a class="page-link" href="?page={{ $i }}{{ $categoryId ? '&category_id=' . $categoryId : '' }}">{{ $i }}</a>
-                        </li>
-                    @endfor
-
-                    <li class="page-item {{ $currentPage >= $totalPages ? 'disabled' : '' }}">
-                        <a class="page-link" href="?page={{ $currentPage + 1 }}{{ $categoryId ? '&category_id=' . $categoryId : '' }}">Berikutnya →</a>
-                    </li>
-                </ul>
-            </nav>
+                {{-- Next Page Link --}}
+                @if ($products->hasMorePages())
+                <li class="page-item">
+                    <a class="page-link" href="{{ $products->nextPageUrl() }}" rel="next">Next</a>
+                </li>
+                @else
+                <li class="page-item disabled">
+                    <span class="page-link">Next</span>
+                </li>
+                @endif
+            </ul>
+        </nav>
         @endif
 
         {{-- Bottom Sheet Modal --}}
@@ -258,7 +283,8 @@
 
             <div class="mb-3">
                 <label for="orderNotes" class="form-label">Catatan Pemesanan:</label>
-                <textarea class="form-control" id="orderNotes" rows="3" placeholder="Tambahkan catatan khusus untuk pesanan ini"></textarea>
+                <textarea class="form-control" id="orderNotes" rows="3"
+                    placeholder="Tambahkan catatan khusus untuk pesanan ini"></textarea>
             </div>
 
             <div class="quantity-controls">
@@ -280,6 +306,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let productPrice = 0; // Store the product price
 
@@ -308,7 +335,7 @@
 
         // Event listeners for "Add to Cart" buttons
         document.querySelectorAll('.add-to-cart-btn').forEach(button => {
-            button.addEventListener('click', function(event) {
+            button.addEventListener('click', function (event) {
                 event.preventDefault(); // Prevent default form submission
 
                 const productId = this.dataset.productId;
@@ -351,10 +378,12 @@
         }
 
         // Event listener for form submission
-        document.getElementById('addToCartForm').addEventListener('submit', function() {
+        document.getElementById('addToCartForm').addEventListener('submit', function () {
             document.getElementById('notesInput').value = document.getElementById('orderNotes').value;
             updateQuantityInput(); // Ensure quantity is updated on form submission
             closeCartModal(); // Close the modal after submission
         });
     </script>
-@endsection
+</body>
+
+</html>

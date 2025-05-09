@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\PawoonService;
+use Illuminate\Pagination\Paginator;
 
 class ProductController extends Controller
 {
@@ -45,13 +46,16 @@ class ProductController extends Controller
         $categoriesData = $this->pawoon->getCategories();
         $categories = isset($categoriesData['data']) ? $categoriesData['data'] : [];
 
-      //Re-paginate the array
-        $currentPage = $request->get('page', 1);
-        $perPage = 25;
+        //Manually paginate the array
+        $currentPage = Paginator::resolveCurrentPage() ?? 1;
+
+        $perPage = 6;
         $offset = ($currentPage - 1) * $perPage;
         $itemsForCurrentPage = array_slice($allProducts, $offset, $perPage, true);
+
+        //Create our paginator and pass it to the view
         $products = new \Illuminate\Pagination\LengthAwarePaginator($itemsForCurrentPage, count($allProducts), $perPage, $currentPage, ['path' => $request->url(), 'query' => $request->query()]);
-        
+
         return view('products.index', compact('products', 'categories', 'categoryId', 'outlet', 'table'));
     }
 }
